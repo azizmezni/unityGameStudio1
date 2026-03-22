@@ -1,0 +1,289 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61787fece004d704191cf7b02759a07f, type: 3}
+  m_Name: ProviderConfig
+  m_EditorClassIdentifier: Assembly-CSharp-Editor::ClaudeCodeGameStudios.Providers.LLMProviderConfig
+  Providers:
+  - Type: 0
+    Name: Claude (Anthropic)
+    Endpoint: https://api.anthropic.com/v1
+    RequiresApiKey: 1
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_Claude
+    IsConnected: 1
+    ConnectionError: 
+    AvailableModels:
+    - Id: claude-opus-4-6
+      DisplayName: Claude Opus 4.6
+      OwnedBy: anthropic
+      Details: Most capable
+    - Id: claude-sonnet-4-6
+      DisplayName: Claude Sonnet 4.6
+      OwnedBy: anthropic
+      Details: Balanced
+    - Id: claude-haiku-4-5-20251001
+      DisplayName: Claude Haiku 4.5
+      OwnedBy: anthropic
+      Details: Fast & light
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 1
+    Name: OpenAI
+    Endpoint: https://api.openai.com/v1
+    RequiresApiKey: 1
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_OpenAI
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 2
+    Name: OpenRouter
+    Endpoint: https://openrouter.ai/api/v1
+    RequiresApiKey: 1
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_OpenRouter
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 3
+    Name: Ollama (Local)
+    Endpoint: http://localhost:11434
+    RequiresApiKey: 0
+    ApiKeyPrefsKey: 
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 4
+    Name: Ollama Cloud
+    Endpoint: https://ollama.com
+    RequiresApiKey: 1
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_OllamaCloud
+    IsConnected: 1
+    ConnectionError: 
+    AvailableModels:
+    - Id: cogito-2.1:671b
+      DisplayName: cogito-2.1:671b
+      OwnedBy: 
+      Details: 641.3 GB
+    - Id: deepseek-v3.1:671b
+      DisplayName: deepseek-v3.1:671b
+      OwnedBy: 
+      Details: 641.3 GB
+    - Id: deepseek-v3.2
+      DisplayName: deepseek-v3.2
+      OwnedBy: 
+      Details: 641.3 GB
+    - Id: devstral-2:123b
+      DisplayName: devstral-2:123b
+      OwnedBy: 
+      Details: 119.4 GB
+    - Id: devstral-small-2:24b
+      DisplayName: devstral-small-2:24b
+      OwnedBy: 
+      Details: 48.1 GB
+    - Id: gemini-3-flash-preview
+      DisplayName: gemini-3-flash-preview
+      OwnedBy: 
+      Details: 
+    - Id: gemma3:12b
+      DisplayName: gemma3:12b
+      OwnedBy: 
+      Details: 22.4 GB
+    - Id: gemma3:27b
+      DisplayName: gemma3:27b
+      OwnedBy: 
+      Details: 51.2 GB
+    - Id: gemma3:4b
+      DisplayName: gemma3:4b
+      OwnedBy: 
+      Details: 8.0 GB
+    - Id: glm-4.6
+      DisplayName: glm-4.6
+      OwnedBy: 
+      Details: 648.3 GB
+    - Id: glm-4.7
+      DisplayName: glm-4.7
+      OwnedBy: 
+      Details: 648.3 GB
+    - Id: glm-5
+      DisplayName: glm-5
+      OwnedBy: 
+      Details: 704.2 GB
+    - Id: gpt-oss:120b
+      DisplayName: gpt-oss:120b
+      OwnedBy: 
+      Details: 60.8 GB
+    - Id: gpt-oss:20b
+      DisplayName: gpt-oss:20b
+      OwnedBy: 
+      Details: 12.8 GB
+    - Id: kimi-k2.5
+      DisplayName: kimi-k2.5
+      OwnedBy: 
+      Details: 1041.7 GB
+    - Id: kimi-k2:1t
+      DisplayName: kimi-k2:1t
+      OwnedBy: 
+      Details: 1041.7 GB
+    - Id: kimi-k2-thinking
+      DisplayName: kimi-k2-thinking
+      OwnedBy: 
+      Details: 1041.7 GB
+    - Id: minimax-m2
+      DisplayName: minimax-m2
+      OwnedBy: 
+      Details: 214.2 GB
+    - Id: minimax-m2.1
+      DisplayName: minimax-m2.1
+      OwnedBy: 
+      Details: 214.2 GB
+    - Id: minimax-m2.5
+      DisplayName: minimax-m2.5
+      OwnedBy: 
+      Details: 214.2 GB
+    - Id: minimax-m2.7
+      DisplayName: minimax-m2.7
+      OwnedBy: 
+      Details: 
+    - Id: ministral-3:14b
+      DisplayName: ministral-3:14b
+      OwnedBy: 
+      Details: 14.6 GB
+    - Id: ministral-3:3b
+      DisplayName: ministral-3:3b
+      OwnedBy: 
+      Details: 4.3 GB
+    - Id: ministral-3:8b
+      DisplayName: ministral-3:8b
+      OwnedBy: 
+      Details: 9.7 GB
+    - Id: mistral-large-3:675b
+      DisplayName: mistral-large-3:675b
+      OwnedBy: 
+      Details: 635.2 GB
+    - Id: nemotron-3-nano:30b
+      DisplayName: nemotron-3-nano:30b
+      OwnedBy: 
+      Details: 30.4 GB
+    - Id: nemotron-3-super
+      DisplayName: nemotron-3-super
+      OwnedBy: 
+      Details: 214.7 GB
+    - Id: qwen3.5:397b
+      DisplayName: qwen3.5:397b
+      OwnedBy: 
+      Details: 369.7 GB
+    - Id: qwen3-coder:480b
+      DisplayName: qwen3-coder:480b
+      OwnedBy: 
+      Details: 475.4 GB
+    - Id: qwen3-coder-next
+      DisplayName: qwen3-coder-next
+      OwnedBy: 
+      Details: 76.2 GB
+    - Id: qwen3-next:80b
+      DisplayName: qwen3-next:80b
+      OwnedBy: 
+      Details: 76.2 GB
+    - Id: qwen3-vl:235b
+      DisplayName: qwen3-vl:235b
+      OwnedBy: 
+      Details: 437.7 GB
+    - Id: qwen3-vl:235b-instruct
+      DisplayName: qwen3-vl:235b-instruct
+      OwnedBy: 
+      Details: 437.7 GB
+    - Id: rnj-1:8b
+      DisplayName: rnj-1:8b
+      OwnedBy: 
+      Details: 14.9 GB
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 5
+    Name: LM Studio
+    Endpoint: http://localhost:1234/v1
+    RequiresApiKey: 0
+    ApiKeyPrefsKey: 
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 6
+    Name: Google AI
+    Endpoint: https://generativelanguage.googleapis.com/v1beta
+    RequiresApiKey: 1
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_GoogleAI
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 7
+    Name: Groq
+    Endpoint: https://api.groq.com/openai/v1
+    RequiresApiKey: 1
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_Groq
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 8
+    Name: Hugging Face
+    Endpoint: https://router.huggingface.co/v1
+    RequiresApiKey: 1
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_HuggingFace
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  - Type: 9
+    Name: Custom
+    Endpoint: 
+    RequiresApiKey: 0
+    ApiKeyPrefsKey: ClaudeCode_ApiKey_Custom
+    IsConnected: 0
+    ConnectionError: 
+    AvailableModels: []
+    SelectedModel: 
+    IsFetchingModels: 0
+  FallbackChains:
+  - TierName: Director
+    Entries:
+    - Provider: 0
+      Model: claude-opus-4-6
+    - Provider: 2
+      Model: anthropic/claude-3-opus
+  - TierName: Lead
+    Entries:
+    - Provider: 0
+      Model: claude-sonnet-4-6
+    - Provider: 2
+      Model: anthropic/claude-3-sonnet
+  - TierName: Specialist
+    Entries:
+    - Provider: 0
+      Model: claude-haiku-4-5-20251001
+    - Provider: 3
+      Model: llama3.1:8b
+  AgentOverrides: []
+  DirectorProvider: 4
+  DirectorModel: minimax-m2.7
+  LeadProvider: 4
+  LeadModel: minimax-m2.7
+  SpecialistProvider: 4
+  SpecialistModel: minimax-m2.7
