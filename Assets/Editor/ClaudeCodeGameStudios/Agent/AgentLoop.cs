@@ -17,7 +17,7 @@ namespace ClaudeCodeGameStudios.Agent
         private readonly string _model;
         private readonly string _systemPrompt;
         private readonly List<(string role, string content)> _conversationHistory = new();
-        private int _maxIterations = 15;
+        private int _maxIterations = 100;
         private int _currentIteration;
 
         public event Action<string> OnTextOutput;        // LLM text message to user
