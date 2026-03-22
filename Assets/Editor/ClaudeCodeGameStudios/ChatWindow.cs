@@ -204,6 +204,14 @@ namespace ClaudeCodeGameStudios
             _sendBtn.style.fontSize = 11;
             inputRow.Add(_sendBtn);
 
+            var autofixBtn = new Button(RunAutofix) { text = "Autofix" };
+            autofixBtn.style.height = 28;
+            autofixBtn.style.marginLeft = 4;
+            autofixBtn.style.fontSize = 11;
+            autofixBtn.style.backgroundColor = new Color(0.6f, 0.2f, 0.2f);
+            autofixBtn.style.color = Color.white;
+            inputRow.Add(autofixBtn);
+
             _stopBtn = new Button(StopAgent) { text = "Stop" };
             _stopBtn.style.height = 28;
             _stopBtn.style.marginLeft = 4;
@@ -369,6 +377,117 @@ namespace ClaudeCodeGameStudios
                 SetStatus($"Agent thinking... (iteration {_entries.Count(e => e.Type == EntryType.Tool)})",
                     new Color(0.9f, 0.8f, 0.2f));
             };
+        }
+
+        private void RunAutofix()
+        {
+            if (_agentLoop != null && _agentLoop.IsRunning) return;
+
+            // Collect errors from multiple sources
+            var errors = new List<string>();
+
+            // 1. Compile errors from Unity's log file
+            var compileErrors = CollectCompileErrors();
+            if (compileErrors.Count > 0)
+                errors.AddRange(compileErrors);
+
+            // 2. Console bridge log errors
+            var bridgeLog = PathResolver.ConsoleBridgeLog;
+            if (File.Exists(bridgeLog))
+            {
+                var logLines = File.ReadAllLines(bridgeLog);
+                // Get last 50 error/exception lines
+                var recentErrors = logLines
+                    .Where(l => l.Contains("[ERROR]") || l.Contains("[EXCEPTION]"))
+                    .Reverse().Take(50).Reverse().ToList();
+                if (recentErrors.Count > 0)
+                    errors.AddRange(recentErrors);
+            }
+
+            if (errors.Count == 0)
+            {
+                AddEntry(EntryType.System, "Autofix", "No errors found. Console is clean.");
+                return;
+            }
+
+            // Build the autofix prompt
+            var errorBlock = string.Join("\n", errors);
+            var prompt =
+                $"I have {errors.Count} error(s) in my Unity project. Read the relevant source files, understand each error, and fix them all.\n\n" +
+                "ERRORS:\n```\n" + errorBlock + "\n```\n\n" +
+                "For each error:\n" +
+                "1. Read the file that has the error\n" +
+                "2. Understand what's wrong\n" +
+                "3. Fix it using edit_file (or write_file if the file needs major changes)\n" +
+                "4. Move to the next error\n\n" +
+                "Fix ALL errors. Don't just describe the fix — actually write the corrected code.";
+
+            AddEntry(EntryType.User, "Autofix", $"Found {errors.Count} error(s). Sending to agent for fixing...");
+
+            var systemPrompt = BuildSystemPrompt();
+            _agentLoop = new AgentLoop(_selectedProvider, _selectedModel, systemPrompt);
+            WireAgentEvents(_agentLoop);
+            SetAgentRunning(true);
+            _agentLoop.Run(prompt);
+        }
+
+        private List<string> CollectCompileErrors()
+        {
+            var errors = new List<string>();
+
+            // Read Unity Editor.log for CS errors
+            var editorLogPath = GetEditorLogPath();
+            if (!string.IsNullOrEmpty(editorLogPath) && File.Exists(editorLogPath))
+            {
+                try
+                {
+                    // Read with shared access since Unity has it open
+                    using var fs = new FileStream(editorLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var reader = new StreamReader(fs);
+                    var content = reader.ReadToEnd();
+                    var lines = content.Split('\n');
+
+                    // Get last 200 lines and find compile errors
+                    var recentLines = lines.Skip(System.Math.Max(0, lines.Length - 200));
+                    foreach (var line in recentLines)
+                    {
+                        var trimmed = line.Trim();
+                        // Match CS errors like: Assets\Path\File.cs(12,5): error CS1234: message
+                        if (trimmed.Contains("error CS") ||
+                            trimmed.Contains("error cs") ||
+                            (trimmed.Contains(": error ") && trimmed.Contains(".cs")))
+                        {
+                            if (!errors.Contains(trimmed))
+                                errors.Add(trimmed);
+                        }
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[ClaudeCode] Could not read editor log: {e.Message}");
+                }
+            }
+
+            // Also check if there are compile errors via CompilationPipeline
+            // (fallback: scan Assets for .cs files with known issues)
+
+            return errors;
+        }
+
+        private static string GetEditorLogPath()
+        {
+#if UNITY_EDITOR_WIN
+            var localAppData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
+            return Path.Combine(localAppData, "Unity", "Editor", "Editor.log");
+#elif UNITY_EDITOR_OSX
+            var home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+            return Path.Combine(home, "Library", "Logs", "Unity", "Editor.log");
+#elif UNITY_EDITOR_LINUX
+            var home = System.Environment.GetFolderPath(System.Environment.SpecialFolder.Personal);
+            return Path.Combine(home, ".config", "unity3d", "Editor.log");
+#else
+            return "";
+#endif
         }
 
         private void StopAgent()
