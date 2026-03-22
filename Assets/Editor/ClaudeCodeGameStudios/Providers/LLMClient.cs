@@ -306,7 +306,7 @@ namespace ClaudeCodeGameStudios.Providers
             request.uploadHandler = new UploadHandlerRaw(bodyBytes);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 120;
+            request.timeout = 300; // 5 min — LLMs generating code + tool calls need time
             return request;
         }
 

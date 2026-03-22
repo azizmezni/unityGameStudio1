@@ -286,7 +286,7 @@ namespace ClaudeCodeGameStudios.Agent
                 var process = Process.Start(psi);
                 if (process == null) return "Error: Failed to start process.";
 
-                process.WaitForExit(30000); // 30s timeout
+                process.WaitForExit(60000); // 60s timeout
 
                 var stdout = process.StandardOutput.ReadToEnd();
                 var stderr = process.StandardError.ReadToEnd();
