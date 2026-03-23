@@ -353,12 +353,6 @@ namespace ClaudeCodeGameStudios
                     displayResult = displayResult.Substring(0, 2000) + "\n... (truncated in display)";
 
                 AddEntry(EntryType.Tool, title, displayResult);
-
-                // Trigger Unity asset refresh if files were written
-                if (call.ToolName == "write_file" || call.ToolName == "edit_file")
-                {
-                    EditorApplication.delayCall += () => AssetDatabase.Refresh();
-                }
             };
 
             agent.OnError += error =>

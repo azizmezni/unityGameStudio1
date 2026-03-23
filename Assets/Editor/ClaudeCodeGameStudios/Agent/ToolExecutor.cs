@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using ClaudeCodeGameStudios.Utilities;
+using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -17,6 +18,18 @@ namespace ClaudeCodeGameStudios.Agent
     /// </summary>
     public static class ToolExecutor
     {
+        private static bool _pendingAssetRefresh;
+
+        /// <summary>
+        /// Call after a batch of tool executions to tell Unity about new/changed files.
+        /// </summary>
+        public static void FlushAssetRefresh()
+        {
+            if (!_pendingAssetRefresh) return;
+            _pendingAssetRefresh = false;
+            EditorApplication.delayCall += () => AssetDatabase.Refresh();
+        }
+
         public static readonly string[] ToolDescriptions =
         {
             @"<tool name=""read_file"">Read a file. Params: path (relative to project root). Returns file contents.</tool>",
@@ -161,8 +174,9 @@ namespace ClaudeCodeGameStudios.Agent
                 Directory.CreateDirectory(dir);
 
             File.WriteAllText(path, content);
+            _pendingAssetRefresh = true;
             Debug.Log($"[ClaudeCode Agent] Wrote file: {path} ({content.Length} chars)");
-            return $"File written: {path} ({content.Length} chars)";
+            return $"File written: {PathResolver.GetRelativeToProject(path)} ({content.Length} chars)";
         }
 
         private static string ExecuteEditFile(ToolCall call)
@@ -185,8 +199,9 @@ namespace ClaudeCodeGameStudios.Agent
 
             content = content.Replace(oldText, newText);
             File.WriteAllText(path, content);
+            _pendingAssetRefresh = true;
             Debug.Log($"[ClaudeCode Agent] Edited file: {path}");
-            return $"File edited: {path}";
+            return $"File edited: {PathResolver.GetRelativeToProject(path)}";
         }
 
         private static string ExecuteListFiles(ToolCall call)

@@ -137,6 +137,7 @@ namespace ClaudeCodeGameStudios.Agent
             // If no tool calls, we're done
             if (toolCalls.Count == 0)
             {
+                ToolExecutor.FlushAssetRefresh();
                 IsRunning = false;
                 OnComplete?.Invoke();
                 return;
@@ -153,6 +154,9 @@ namespace ClaudeCodeGameStudios.Agent
                 resultsSb.AppendLine(result);
                 resultsSb.AppendLine();
             }
+
+            // Flush any pending Unity asset refreshes so new files appear
+            ToolExecutor.FlushAssetRefresh();
 
             // Add tool results to history and continue the loop
             _conversationHistory.Add(("tool_result", resultsSb.ToString()));
