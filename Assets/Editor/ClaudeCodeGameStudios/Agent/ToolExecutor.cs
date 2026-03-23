@@ -58,7 +58,12 @@ namespace ClaudeCodeGameStudios.Agent
             sb.AppendLine($"Project root: {PathResolver.ProjectRoot}");
             sb.AppendLine("All file paths are relative to the project root unless they start with / or a drive letter.");
             sb.AppendLine();
-            sb.AppendLine("IMPORTANT: When writing C# scripts for Unity, always write complete, compilable files. Use proper namespaces, using directives, and Unity conventions (PascalCase classes, _camelCase private fields).");
+            sb.AppendLine("IMPORTANT UNITY PATH RULES:");
+            sb.AppendLine("- All C# scripts MUST go inside Assets/ (e.g., Assets/Scripts/Car/CarController.cs)");
+            sb.AppendLine("- All game assets (prefabs, materials, scenes, textures, audio) MUST go inside Assets/");
+            sb.AppendLine("- Use 'Assets/Scripts/' for code, 'Assets/Prefabs/' for prefabs, 'Assets/Scenes/' for scenes");
+            sb.AppendLine("- Design docs go in 'design/', NOT in Assets/");
+            sb.AppendLine("- Write complete, compilable C# files with proper using directives and Unity conventions (PascalCase classes, _camelCase private fields).");
             return sb.ToString();
         }
 
@@ -146,6 +151,29 @@ namespace ClaudeCodeGameStudios.Agent
                 return normalized;
             }
 
+            // If path starts with "Assets/", resolve from project root as-is
+            if (path.StartsWith("Assets/") || path.StartsWith("Assets\\"))
+                return Path.GetFullPath(Path.Combine(PathResolver.ProjectRoot, path)).Replace('\\', '/');
+
+            // If path starts with common Unity folders (Scripts/, Prefabs/, Scenes/, Materials/, etc.)
+            // auto-prepend "Assets/" so files land inside the Assets folder where Unity can see them
+            var firstSegment = path.Split('/', '\\')[0];
+            var unityFolders = new[]
+            {
+                "Scripts", "Prefabs", "Scenes", "Materials", "Shaders", "Textures",
+                "Models", "Animations", "Audio", "Fonts", "Plugins", "Resources",
+                "StreamingAssets", "Art", "VFX", "UI", "Data", "Config",
+                "Editor", "Sprites", "Tilemaps"
+            };
+
+            if (Array.Exists(unityFolders, f => string.Equals(f, firstSegment, StringComparison.OrdinalIgnoreCase)))
+                return Path.GetFullPath(Path.Combine(PathResolver.ProjectRoot, "Assets", path)).Replace('\\', '/');
+
+            // Also catch .cs files not in a known folder — they should go in Assets/
+            if (path.EndsWith(".cs") && !path.Contains("/") && !path.Contains("\\"))
+                return Path.GetFullPath(Path.Combine(PathResolver.ProjectRoot, "Assets", path)).Replace('\\', '/');
+
+            // Everything else resolves from project root (design/, docs/, production/, etc.)
             return Path.GetFullPath(Path.Combine(PathResolver.ProjectRoot, path)).Replace('\\', '/');
         }
 
