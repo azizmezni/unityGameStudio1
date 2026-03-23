@@ -14,7 +14,6 @@ namespace ClaudeCodeGameStudios
     /// <summary>
     /// Full AI coding assistant inside Unity Editor.
     /// Reads/writes files, runs commands, creates scripts — uses any configured LLM provider.
-    /// No Claude Code CLI needed.
     /// </summary>
     public class ChatWindow : EditorWindow
     {
@@ -26,6 +25,7 @@ namespace ClaudeCodeGameStudios
         private Label _statusLabel;
         private Button _sendBtn;
         private Button _stopBtn;
+        private Button _autofixBtn;
 
         private ProviderType _selectedProvider;
         private string _selectedModel;
@@ -81,10 +81,21 @@ namespace ClaudeCodeGameStudios
             rootVisualElement.Clear();
             rootVisualElement.style.backgroundColor = new Color(0.13f, 0.13f, 0.16f);
 
-            // === Top bar: provider + model ===
+            // Outer container that fills the entire window
+            var outer = new VisualElement();
+            outer.style.position = Position.Absolute;
+            outer.style.top = 0;
+            outer.style.bottom = 0;
+            outer.style.left = 0;
+            outer.style.right = 0;
+            outer.style.flexDirection = FlexDirection.Column;
+            rootVisualElement.Add(outer);
+
+            // === Top bar: provider + model (pinned top) ===
             var topBar = new VisualElement();
             topBar.style.flexDirection = FlexDirection.Row;
             topBar.style.alignItems = Align.Center;
+            topBar.style.flexShrink = 0; // never shrink
             topBar.style.paddingLeft = 8;
             topBar.style.paddingRight = 8;
             topBar.style.paddingTop = 4;
@@ -124,21 +135,22 @@ namespace ClaudeCodeGameStudios
             clearBtn.style.marginLeft = 6;
             topBar.Add(clearBtn);
 
-            rootVisualElement.Add(topBar);
+            outer.Add(topBar);
 
-            // === Skill bar ===
+            // === Skill bar (optional, pinned below top bar) ===
             if (!string.IsNullOrEmpty(_activeSkillName))
             {
                 var skillBar = new VisualElement();
                 skillBar.style.flexDirection = FlexDirection.Row;
                 skillBar.style.alignItems = Align.Center;
+                skillBar.style.flexShrink = 0;
                 skillBar.style.paddingLeft = 8;
                 skillBar.style.paddingRight = 8;
                 skillBar.style.paddingTop = 3;
                 skillBar.style.paddingBottom = 3;
                 skillBar.style.backgroundColor = new Color(0.12f, 0.18f, 0.28f);
 
-                var skillLabel = new Label($"Skill: /{_activeSkillName}  — AI will follow this skill's instructions");
+                var skillLabel = new Label($"Skill: /{_activeSkillName}");
                 skillLabel.style.fontSize = 10;
                 skillLabel.style.color = new Color(0.4f, 0.7f, 1f);
                 skillLabel.style.flexGrow = 1;
@@ -155,38 +167,40 @@ namespace ClaudeCodeGameStudios
                 removeBtn.style.fontSize = 9;
                 skillBar.Add(removeBtn);
 
-                rootVisualElement.Add(skillBar);
+                outer.Add(skillBar);
             }
 
-            // === Chat area ===
+            // === Chat scroll area (takes all remaining space) ===
             _chatScroll = new ScrollView(ScrollViewMode.Vertical);
-            _chatScroll.style.flexGrow = 1;
+            _chatScroll.style.flexGrow = 1;    // fill available space
+            _chatScroll.style.flexShrink = 1;  // shrink if needed
             _chatScroll.style.paddingLeft = 8;
             _chatScroll.style.paddingRight = 8;
             _chatScroll.style.paddingTop = 8;
             _chatContainer = _chatScroll.contentContainer;
-            rootVisualElement.Add(_chatScroll);
+            outer.Add(_chatScroll);
 
             // Re-render history
             foreach (var entry in _entries)
                 RenderEntry(entry);
 
-            // === Input area ===
-            var inputRow = new VisualElement();
-            inputRow.style.flexDirection = FlexDirection.Row;
-            inputRow.style.paddingLeft = 8;
-            inputRow.style.paddingRight = 8;
-            inputRow.style.paddingTop = 6;
-            inputRow.style.paddingBottom = 6;
-            inputRow.style.backgroundColor = new Color(0.10f, 0.10f, 0.13f);
-            inputRow.style.borderTopWidth = 1;
-            inputRow.style.borderTopColor = new Color(0.25f, 0.25f, 0.30f);
+            // === Input area (pinned to bottom, never hidden) ===
+            var inputArea = new VisualElement();
+            inputArea.style.flexShrink = 0;  // NEVER shrink — always visible
+            inputArea.style.backgroundColor = new Color(0.10f, 0.10f, 0.13f);
+            inputArea.style.borderTopWidth = 1;
+            inputArea.style.borderTopColor = new Color(0.25f, 0.25f, 0.30f);
+            inputArea.style.paddingLeft = 8;
+            inputArea.style.paddingRight = 8;
+            inputArea.style.paddingTop = 6;
+            inputArea.style.paddingBottom = 6;
 
             _inputField = new TextField();
             _inputField.style.flexGrow = 1;
             _inputField.style.fontSize = 12;
             _inputField.multiline = true;
-            _inputField.style.maxHeight = 100;
+            _inputField.style.minHeight = 28;
+            _inputField.style.maxHeight = 80;
             _inputField.RegisterCallback<KeyDownEvent>(evt =>
             {
                 if (evt.keyCode == KeyCode.Return && !evt.shiftKey)
@@ -196,30 +210,39 @@ namespace ClaudeCodeGameStudios
                     SendMessage();
                 }
             });
-            inputRow.Add(_inputField);
+            inputArea.Add(_inputField);
+
+            // Button row below input
+            var btnRow = new VisualElement();
+            btnRow.style.flexDirection = FlexDirection.Row;
+            btnRow.style.justifyContent = Justify.FlexEnd;
+            btnRow.style.marginTop = 4;
 
             _sendBtn = new Button(SendMessage) { text = "Send" };
-            _sendBtn.style.height = 28;
-            _sendBtn.style.marginLeft = 6;
+            _sendBtn.style.height = 26;
+            _sendBtn.style.width = 60;
             _sendBtn.style.fontSize = 11;
-            inputRow.Add(_sendBtn);
+            btnRow.Add(_sendBtn);
 
-            var autofixBtn = new Button(RunAutofix) { text = "Autofix" };
-            autofixBtn.style.height = 28;
-            autofixBtn.style.marginLeft = 4;
-            autofixBtn.style.fontSize = 11;
-            autofixBtn.style.backgroundColor = new Color(0.6f, 0.2f, 0.2f);
-            autofixBtn.style.color = Color.white;
-            inputRow.Add(autofixBtn);
+            _autofixBtn = new Button(RunAutofix) { text = "Autofix" };
+            _autofixBtn.style.height = 26;
+            _autofixBtn.style.width = 70;
+            _autofixBtn.style.marginLeft = 4;
+            _autofixBtn.style.fontSize = 11;
+            _autofixBtn.style.backgroundColor = new Color(0.6f, 0.2f, 0.2f);
+            _autofixBtn.style.color = Color.white;
+            btnRow.Add(_autofixBtn);
 
             _stopBtn = new Button(StopAgent) { text = "Stop" };
-            _stopBtn.style.height = 28;
+            _stopBtn.style.height = 26;
+            _stopBtn.style.width = 50;
             _stopBtn.style.marginLeft = 4;
             _stopBtn.style.fontSize = 11;
             _stopBtn.style.display = DisplayStyle.None;
-            inputRow.Add(_stopBtn);
+            btnRow.Add(_stopBtn);
 
-            rootVisualElement.Add(inputRow);
+            inputArea.Add(btnRow);
+            outer.Add(inputArea);
 
             _inputField.schedule.Execute(() => _inputField.Focus()).ExecuteLater(100);
         }
@@ -300,7 +323,7 @@ namespace ClaudeCodeGameStudios
 
             ClearChat();
             AddEntry(EntryType.System, "Skill Loaded",
-                $"/{skillName} is active. The agent will follow this skill's instructions and can read/write files, run commands, and create scripts.");
+                $"/{skillName} is active. The agent will follow this skill's instructions.");
             BuildUI();
         }
 
@@ -314,10 +337,8 @@ namespace ClaudeCodeGameStudios
 
             AddEntry(EntryType.User, "You", msg);
 
-            // Build system prompt with tool instructions
             var systemPrompt = BuildSystemPrompt();
 
-            // Create or continue agent loop
             if (_agentLoop == null || !_agentLoop.IsRunning)
             {
                 _agentLoop = new AgentLoop(_selectedProvider, _selectedModel, systemPrompt);
@@ -347,7 +368,6 @@ namespace ClaudeCodeGameStudios
                 else if (call.Params.TryGetValue("command", out var cmd))
                     title += $": {cmd}";
 
-                // Truncate long results in display
                 var displayResult = result;
                 if (displayResult.Length > 2000)
                     displayResult = displayResult.Substring(0, 2000) + "\n... (truncated in display)";
@@ -377,20 +397,16 @@ namespace ClaudeCodeGameStudios
         {
             if (_agentLoop != null && _agentLoop.IsRunning) return;
 
-            // Collect errors from multiple sources
             var errors = new List<string>();
 
-            // 1. Compile errors from Unity's log file
             var compileErrors = CollectCompileErrors();
             if (compileErrors.Count > 0)
                 errors.AddRange(compileErrors);
 
-            // 2. Console bridge log errors
             var bridgeLog = PathResolver.ConsoleBridgeLog;
             if (File.Exists(bridgeLog))
             {
                 var logLines = File.ReadAllLines(bridgeLog);
-                // Get last 50 error/exception lines
                 var recentErrors = logLines
                     .Where(l => l.Contains("[ERROR]") || l.Contains("[EXCEPTION]"))
                     .Reverse().Take(50).Reverse().ToList();
@@ -404,7 +420,6 @@ namespace ClaudeCodeGameStudios
                 return;
             }
 
-            // Build the autofix prompt
             var errorBlock = string.Join("\n", errors);
             var prompt =
                 $"I have {errors.Count} error(s) in my Unity project. Read the relevant source files, understand each error, and fix them all.\n\n" +
@@ -416,7 +431,7 @@ namespace ClaudeCodeGameStudios
                 "4. Move to the next error\n\n" +
                 "Fix ALL errors. Don't just describe the fix — actually write the corrected code.";
 
-            AddEntry(EntryType.User, "Autofix", $"Found {errors.Count} error(s). Sending to agent for fixing...");
+            AddEntry(EntryType.User, "Autofix", $"Found {errors.Count} error(s). Sending to agent...");
 
             var systemPrompt = BuildSystemPrompt();
             _agentLoop = new AgentLoop(_selectedProvider, _selectedModel, systemPrompt);
@@ -428,42 +443,34 @@ namespace ClaudeCodeGameStudios
         private List<string> CollectCompileErrors()
         {
             var errors = new List<string>();
-
-            // Read Unity Editor.log for CS errors
             var editorLogPath = GetEditorLogPath();
-            if (!string.IsNullOrEmpty(editorLogPath) && File.Exists(editorLogPath))
-            {
-                try
-                {
-                    // Read with shared access since Unity has it open
-                    using var fs = new FileStream(editorLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var reader = new StreamReader(fs);
-                    var content = reader.ReadToEnd();
-                    var lines = content.Split('\n');
+            if (string.IsNullOrEmpty(editorLogPath) || !File.Exists(editorLogPath))
+                return errors;
 
-                    // Get last 200 lines and find compile errors
-                    var recentLines = lines.Skip(System.Math.Max(0, lines.Length - 200));
-                    foreach (var line in recentLines)
+            try
+            {
+                using var fs = new FileStream(editorLogPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var reader = new StreamReader(fs);
+                var content = reader.ReadToEnd();
+                var lines = content.Split('\n');
+
+                var recentLines = lines.Skip(System.Math.Max(0, lines.Length - 200));
+                foreach (var line in recentLines)
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.Contains("error CS") ||
+                        trimmed.Contains("error cs") ||
+                        (trimmed.Contains(": error ") && trimmed.Contains(".cs")))
                     {
-                        var trimmed = line.Trim();
-                        // Match CS errors like: Assets\Path\File.cs(12,5): error CS1234: message
-                        if (trimmed.Contains("error CS") ||
-                            trimmed.Contains("error cs") ||
-                            (trimmed.Contains(": error ") && trimmed.Contains(".cs")))
-                        {
-                            if (!errors.Contains(trimmed))
-                                errors.Add(trimmed);
-                        }
+                        if (!errors.Contains(trimmed))
+                            errors.Add(trimmed);
                     }
                 }
-                catch (System.Exception e)
-                {
-                    Debug.LogWarning($"[ClaudeCode] Could not read editor log: {e.Message}");
-                }
             }
-
-            // Also check if there are compile errors via CompilationPipeline
-            // (fallback: scan Assets for .cs files with known issues)
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[ClaudeCode] Could not read editor log: {e.Message}");
+            }
 
             return errors;
         }
@@ -495,6 +502,8 @@ namespace ClaudeCodeGameStudios
         {
             if (_sendBtn != null)
                 _sendBtn.style.display = running ? DisplayStyle.None : DisplayStyle.Flex;
+            if (_autofixBtn != null)
+                _autofixBtn.style.display = running ? DisplayStyle.None : DisplayStyle.Flex;
             if (_stopBtn != null)
                 _stopBtn.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
             if (_inputField != null)
@@ -507,15 +516,11 @@ namespace ClaudeCodeGameStudios
         private string BuildSystemPrompt()
         {
             var parts = new List<string>();
-
-            // Tool instructions (always included)
             parts.Add(ToolExecutor.BuildToolSystemPrompt());
 
-            // Skill prompt
             if (!string.IsNullOrEmpty(_activeSkillPrompt))
                 parts.Add($"=== Active Skill Instructions ===\n{_activeSkillPrompt}");
 
-            // Project context
             parts.Add("You are an AI coding assistant for a Unity 6.3 LTS game project.");
             parts.Add("When asked to create or modify scripts, actually write the files using the write_file or edit_file tools.");
             parts.Add("When asked to run something, use the run_command tool.");
@@ -567,12 +572,12 @@ namespace ClaudeCodeGameStudios
             block.style.paddingTop = 6;
             block.style.paddingBottom = 6;
 
-            // For tools, make it collapsible
+            // Tool entries: collapsible foldout
             if (entry.Type == EntryType.Tool)
             {
                 var foldout = new Foldout();
                 foldout.text = entry.Title;
-                foldout.value = false; // Collapsed by default
+                foldout.value = false;
                 foldout.style.color = new Color(0.5f, 0.85f, 0.55f);
 
                 var headerLabel = foldout.Q<Toggle>().Q<Label>();
@@ -582,18 +587,27 @@ namespace ClaudeCodeGameStudios
                     headerLabel.style.color = new Color(0.5f, 0.85f, 0.55f);
                 }
 
-                var contentLabel = new Label(entry.Content);
-                contentLabel.style.fontSize = 10;
-                contentLabel.style.color = new Color(0.65f, 0.75f, 0.65f);
-                contentLabel.style.whiteSpace = WhiteSpace.Normal;
-                contentLabel.style.overflow = Overflow.Hidden;
-                foldout.Add(contentLabel);
+                // Selectable text field so user can copy
+                var contentField = new TextField();
+                contentField.value = entry.Content;
+                contentField.isReadOnly = true;
+                contentField.multiline = true;
+                contentField.style.fontSize = 10;
+                contentField.style.color = new Color(0.65f, 0.75f, 0.65f);
+                contentField.style.whiteSpace = WhiteSpace.Normal;
+                contentField.style.backgroundColor = new Color(0, 0, 0, 0);
+                contentField.style.borderTopWidth = 0;
+                contentField.style.borderBottomWidth = 0;
+                contentField.style.borderLeftWidth = 0;
+                contentField.style.borderRightWidth = 0;
+                contentField.style.maxHeight = 300;
+                foldout.Add(contentField);
 
                 block.Add(foldout);
             }
             else
             {
-                // Title
+                // Title label (not selectable, just a heading)
                 var titleLabel = new Label(entry.Title);
                 titleLabel.style.fontSize = 9;
                 titleLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -607,13 +621,40 @@ namespace ClaudeCodeGameStudios
                 };
                 block.Add(titleLabel);
 
-                // Content
-                var contentLabel = new Label(entry.Content);
-                contentLabel.style.fontSize = 11;
-                contentLabel.style.color = Color.white;
-                contentLabel.style.whiteSpace = WhiteSpace.Normal;
-                contentLabel.enableRichText = false;
-                block.Add(contentLabel);
+                // Selectable content — read-only TextField so you can select & copy
+                var contentField = new TextField();
+                contentField.value = entry.Content;
+                contentField.isReadOnly = true;
+                contentField.multiline = true;
+                contentField.style.fontSize = 11;
+                contentField.style.color = Color.white;
+                contentField.style.whiteSpace = WhiteSpace.Normal;
+                // Make it look like a label, not an input box
+                contentField.style.backgroundColor = new Color(0, 0, 0, 0);
+                contentField.style.borderTopWidth = 0;
+                contentField.style.borderBottomWidth = 0;
+                contentField.style.borderLeftWidth = 0;
+                contentField.style.borderRightWidth = 0;
+                contentField.style.paddingLeft = 0;
+                contentField.style.paddingRight = 0;
+                contentField.style.marginLeft = 0;
+                contentField.style.marginRight = 0;
+                block.Add(contentField);
+
+                // Copy button for convenience
+                if (entry.Type == EntryType.Assistant && entry.Content.Length > 20)
+                {
+                    var copyBtn = new Button(() =>
+                    {
+                        EditorGUIUtility.systemCopyBuffer = entry.Content;
+                        Debug.Log("[ClaudeCode] Copied to clipboard.");
+                    }) { text = "Copy" };
+                    copyBtn.style.height = 16;
+                    copyBtn.style.fontSize = 9;
+                    copyBtn.style.alignSelf = Align.FlexEnd;
+                    copyBtn.style.marginTop = 4;
+                    block.Add(copyBtn);
+                }
             }
 
             _chatContainer.Add(block);
